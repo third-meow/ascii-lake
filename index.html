@@ -4357,7 +4357,6 @@ function _Browser_load(url)
 		}
 	}));
 }
-var author$project$Main$init = {state: 0};
 var elm$core$Array$Array_elm_builtin = F4(
 	function (a, b, c, d) {
 		return {$: 'Array_elm_builtin', a: a, b: b, c: c, d: d};
@@ -4604,26 +4603,30 @@ var elm$core$Array$fromList = function (list) {
 		return A3(elm$core$Array$fromListHelp, list, _List_Nil, 0);
 	}
 };
-var author$project$Main$symbols = elm$core$Array$fromList(
-	_List_fromArray(
-		['-', '\\', '|', '/', '_', '+', '~']));
-var elm$core$Array$length = function (_n0) {
-	var len = _n0.a;
-	return len;
+var author$project$Main$init = {
+	state: elm$core$Array$fromList(
+		_List_fromArray(
+			[
+				elm$core$Array$fromList(
+				_List_fromArray(
+					[0, 0, 0, 0, 0, 0, 0, 0]))
+			]))
 };
-var elm$core$Basics$modBy = _Basics_modBy;
 var author$project$Main$update = F2(
 	function (msg, model) {
 		return _Utils_update(
 			model,
-			{
-				state: A2(
-					elm$core$Basics$modBy,
-					elm$core$Array$length(author$project$Main$symbols),
-					model.state + 1)
-			});
+			{state: model.state});
 	});
 var author$project$Main$Switch = {$: 'Switch'};
+var author$project$Main$checkIntArray = function (maybeIntArray) {
+	if (maybeIntArray.$ === 'Just') {
+		var value = maybeIntArray.a;
+		return value;
+	} else {
+		return elm$core$Array$empty;
+	}
+};
 var author$project$Main$checkSymb = function (maybeSymb) {
 	if (maybeSymb.$ === 'Just') {
 		var value = maybeSymb.a;
@@ -4632,6 +4635,20 @@ var author$project$Main$checkSymb = function (maybeSymb) {
 		return 'E';
 	}
 };
+var elm$core$Basics$negate = function (n) {
+	return -n;
+};
+var author$project$Main$checkSymbIdx = function (maybeInt) {
+	if (maybeInt.$ === 'Just') {
+		var value = maybeInt.a;
+		return value;
+	} else {
+		return -1;
+	}
+};
+var author$project$Main$symbols = elm$core$Array$fromList(
+	_List_fromArray(
+		['-', '\\', '|', '/', '_', '+', '~']));
 var elm$core$Bitwise$shiftRightZfBy = _Bitwise_shiftRightZfBy;
 var elm$core$Array$bitMask = 4294967295 >>> (32 - elm$core$Array$shiftStep);
 var elm$core$Bitwise$and = _Bitwise_and;
@@ -4679,10 +4696,25 @@ var elm$core$Array$get = F2(
 			A2(elm$core$Elm$JsArray$unsafeGet, elm$core$Array$bitMask & index, tail)) : elm$core$Maybe$Just(
 			A3(elm$core$Array$getHelp, startShift, index, tree)));
 	});
-var author$project$Main$getSymb = function (index) {
-	return author$project$Main$checkSymb(
-		A2(elm$core$Array$get, index, author$project$Main$symbols));
+var elm$core$Array$length = function (_n0) {
+	var len = _n0.a;
+	return len;
 };
+var elm$core$Basics$modBy = _Basics_modBy;
+var author$project$Main$getSymb = F3(
+	function (model, x, y) {
+		var row = author$project$Main$checkIntArray(
+			A2(elm$core$Array$get, y, model.state));
+		var symbIdx = A2(
+			elm$core$Basics$modBy,
+			elm$core$Array$length(author$project$Main$symbols),
+			author$project$Main$checkSymbIdx(
+				A2(elm$core$Array$get, x, row)));
+		return author$project$Main$checkSymb(
+			A2(elm$core$Array$get, symbIdx, author$project$Main$symbols));
+	});
+var elm$core$Basics$idiv = _Basics_idiv;
+var elm$core$Basics$neq = _Utils_notEqual;
 var elm$core$Basics$identity = function (x) {
 	return x;
 };
@@ -4694,7 +4726,6 @@ var elm$core$Result$isOk = function (result) {
 		return false;
 	}
 };
-var elm$core$Basics$idiv = _Basics_idiv;
 var elm$core$Elm$JsArray$initialize = _JsArray_initialize;
 var elm$core$Array$initializeHelp = F5(
 	function (fn, fromIndex, len, nodeList, tail) {
@@ -4960,10 +4991,29 @@ var elm$virtual_dom$VirtualDom$toHandlerInt = function (handler) {
 			return 3;
 	}
 };
-var elm$html$Html$button = _VirtualDom_node('button');
 var elm$html$Html$div = _VirtualDom_node('div');
 var elm$virtual_dom$VirtualDom$text = _VirtualDom_text;
 var elm$html$Html$text = elm$virtual_dom$VirtualDom$text;
+var author$project$Main$addDivs = F2(
+	function (model, divIdx) {
+		var y = (divIdx / 8) | 0;
+		var x = A2(elm$core$Basics$modBy, 8, divIdx);
+		var symbDiv = A2(
+			elm$html$Html$div,
+			_List_Nil,
+			_List_fromArray(
+				[
+					elm$html$Html$text(
+					A3(author$project$Main$getSymb, model, x, y))
+				]));
+		var nextIdx = divIdx - 1;
+		return divIdx ? A2(
+			elm$core$List$cons,
+			symbDiv,
+			A2(author$project$Main$addDivs, model, nextIdx)) : _List_fromArray(
+			[symbDiv]);
+	});
+var elm$html$Html$button = _VirtualDom_node('button');
 var elm$virtual_dom$VirtualDom$Normal = function (a) {
 	return {$: 'Normal', a: a};
 };
@@ -4985,9 +5035,9 @@ var author$project$Main$view = function (model) {
 	return A2(
 		elm$html$Html$div,
 		_List_Nil,
-		_List_fromArray(
-			[
-				A2(
+		A2(
+			elm$core$List$cons,
+			A2(
 				elm$html$Html$button,
 				_List_fromArray(
 					[
@@ -4995,17 +5045,9 @@ var author$project$Main$view = function (model) {
 					]),
 				_List_fromArray(
 					[
-						elm$html$Html$text('switch')
+						elm$html$Html$text('does nothing')
 					])),
-				A2(
-				elm$html$Html$div,
-				_List_Nil,
-				_List_fromArray(
-					[
-						elm$html$Html$text(
-						author$project$Main$getSymb(model.state))
-					]))
-			]));
+			A2(author$project$Main$addDivs, model, 7)));
 };
 var elm$core$Platform$Cmd$batch = _Platform_batch;
 var elm$core$Platform$Cmd$none = elm$core$Platform$Cmd$batch(_List_Nil);
