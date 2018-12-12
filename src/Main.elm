@@ -1,3 +1,4 @@
+import String
 import Array
 import Debug
 import Browser
@@ -10,6 +11,7 @@ main =
 
 symbols = (Array.fromList ["-", "\\", "|", "/", "_", "+", "~"])
 
+-- FUNCTIONS -------------------------------------------------------------------
 
 checkSymb : Maybe String -> String
 checkSymb maybeSymb =
@@ -25,65 +27,76 @@ checkIntArray maybeIntArray =
     Just value ->
       value
     Nothing ->
-      {- if Nothing, give empty array because
-         checkSymb will then catch the Nothing
-         caused by 'get'-ing an empty array and
-         render an "E" -}
       Array.empty
 
-checkSymbIdx : Maybe Int -> Int
-checkSymbIdx maybeInt = 
+checkInt : Maybe Int -> Int
+checkInt maybeInt =
   case maybeInt of
     Just value ->
       value
     Nothing ->
-      {- if Nothing, give -1, checkSymb 
-         will then catch the Nothing 
-         caused by 'get'-ing a negitive 
-         value and render an "E" -}
-      -1
+      0
 
-getSymb : Model -> Int -> Int -> String
-getSymb model x y =
+getRow : Model -> Int -> String
+getRow model idx =
   let
-    row = checkIntArray (Array.get y model.state)
-    symbIdx = modBy (Array.length symbols) (checkSymbIdx (Array.get x row))
+    row = Array.toList (checkIntArray (Array.get idx model.state))
+
+    getSymb : Int -> String
+    getSymb symbCode =
+      (" " ++ (checkSymb (Array.get symbCode symbols)))
+
   in
-    checkSymb (Array.get symbIdx symbols)
+    String.concat (List.map getSymb row)
+
 
 addDivs : Model -> Int -> List (Html msg)
 addDivs model divIdx =
   let
-    x = modBy 8 divIdx
-    y = divIdx // 8
-    symbDiv = div [] [ text (getSymb model x y) ]
+    symbDiv = div [] [ text (getRow model divIdx) ]
     nextIdx = divIdx - 1
   in
     if divIdx /= 0 then symbDiv :: (addDivs model nextIdx) else [ symbDiv ]
 
--- MODEL
+-- MODEL ----------------------------------------------------------------------
 
-type alias Model = { state : Array.Array (Array.Array Int) }
+type alias Model = { state : Array.Array (Array.Array Int), pos : (Int, Int) }
 
 
 init : Model
 init =
-  { state = Array.fromList [ Array.fromList [0,0,0,0,0,0,0,0] ] }
+  { state = Array.repeat 8 (Array.repeat 8 0), pos = (0,0) }
 
 
--- UPDATE
+-- UPDATE ---------------------------------------------------------------------
 
 type Msg = Switch
+          | Left
+          | Down
 
 update : Msg -> Model -> Model
 update msg model =
   case msg of
     Switch ->
-      { model | state = model.state }
+      let
+        row = checkIntArray (Array.get (Tuple.second model.pos) model.state)
+        symbCode = checkInt (Array.get (Tuple.first model.pos) row)
+        newSymbCode = (modBy (Array.length symbols) (symbCode - 1))
+        newRow = Array.set (Tuple.first model.pos) newSymbCode row
+        newState = Array.set (Tuple.second model.pos) newRow model.state
+      in
+      { model | state = newState}
+    Left ->
+      { model | pos = (Debug.log "pos" ((modBy 8 ((Tuple.first model.pos) - 1)), (Tuple.second model.pos))) }
+    Down ->
+      { model | pos = (Debug.log "pos" ((Tuple.first model.pos), (modBy 8 ((Tuple.second model.pos) - 1)))) }
 
--- VIEW
+-- VIEW ----------------------------------------------------------------------
 
 view : Model -> Html Msg
 view model =
   div []
-     (button [ onClick Switch ] [ text "does nothing" ] :: (addDivs model 7))
+     (button [ onClick Left ] [ text "<-" ]
+     :: button [ onClick Switch ] [ text "Switch" ]
+     :: button [ onClick Down ] [ text "v" ]
+     :: (addDivs model 7))
