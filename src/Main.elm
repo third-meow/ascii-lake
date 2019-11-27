@@ -37,66 +37,56 @@ checkInt maybeInt =
     Nothing ->
       0
 
-getRow : Model -> Int -> String
-getRow model idx =
-  let
-    row = Array.toList (checkIntArray (Array.get idx model.state))
+getSymb : Model -> Int -> Int -> String
+getSymb model symbX symbY = 
+    Array.get ( 
+        Array.get symbY model.state
+        |> Maybe.withDefault (Array.fromList [])
+        |> Array.get symbX
+        |> Debug.log ((String.fromInt symbX) ++ " : ")
+        |> Maybe.withDefault 8
+    ) symbols
+    |> checkSymb
 
-    getSymb : Int -> String
-    getSymb symbCode =
-      (" " ++ (checkSymb (Array.get symbCode symbols)))
 
-  in
-    String.concat (List.map getSymb row)
-
+addButtons : Model -> Int -> Int -> List (Html msg)
+addButtons model buttIdx divIdx =
+    let
+        symbButt = button [] [ text (getSymb model buttIdx divIdx) ]
+    in
+        if buttIdx /= 0 then symbButt :: (addButtons model (buttIdx - 1) divIdx) else [ symbButt ]
 
 addDivs : Model -> Int -> List (Html msg)
 addDivs model divIdx =
   let
-    symbDiv = div [] [ text (getRow model divIdx) ]
-    nextIdx = divIdx - 1
+    symbDiv = div [] (addButtons model 7 divIdx)
   in
-    if divIdx /= 0 then symbDiv :: (addDivs model nextIdx) else [ symbDiv ]
+    if divIdx /= 0 then symbDiv :: (addDivs model (divIdx - 1)) else [ symbDiv ] 
+
 
 -- MODEL ----------------------------------------------------------------------
 
-type alias Model = { state : Array.Array (Array.Array Int), pos : (Int, Int) }
+type alias Model = { state : Array.Array (Array.Array Int) }
 
 
 init : Model
 init =
-  { state = Array.repeat 8 (Array.repeat 8 0), pos = (0,0) }
+  { state = Array.repeat 8 (Array.repeat 8 0) }
 
 
 -- UPDATE ---------------------------------------------------------------------
 
 type Msg = Switch
           | Left
+          | Right
+          | Up
           | Down
 
 update : Msg -> Model -> Model
-update msg model =
-  case msg of
-    Switch ->
-      let
-        row = checkIntArray (Array.get (Tuple.second model.pos) model.state)
-        symbCode = checkInt (Array.get (Tuple.first model.pos) row)
-        newSymbCode = (modBy (Array.length symbols) (symbCode - 1))
-        newRow = Array.set (Tuple.first model.pos) newSymbCode row
-        newState = Array.set (Tuple.second model.pos) newRow model.state
-      in
-      { model | state = newState}
-    Left ->
-      { model | pos = (Debug.log "pos" ((modBy 8 ((Tuple.first model.pos) - 1)), (Tuple.second model.pos))) }
-    Down ->
-      { model | pos = (Debug.log "pos" ((Tuple.first model.pos), (modBy 8 ((Tuple.second model.pos) - 1)))) }
+update msg model = model
 
 -- VIEW ----------------------------------------------------------------------
 
 view : Model -> Html Msg
 view model =
-  div []
-     (button [ onClick Left ] [ text "<-" ]
-     :: button [ onClick Switch ] [ text "Switch" ]
-     :: button [ onClick Down ] [ text "v" ]
-     :: (addDivs model 7))
+  div [] (addDivs model 7)
